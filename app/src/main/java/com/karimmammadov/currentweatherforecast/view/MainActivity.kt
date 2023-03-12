@@ -18,8 +18,6 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
-import com.example.hourweather.ForecastAdapter
-import com.example.hourweather.WeatherForecast
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.karimmammadov.currentweatherforecast.R
@@ -45,8 +43,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
     private val LOCATION_REQUEST_CODE = 101
     private lateinit var openWeatherMapApi: WeatherAPI
-    private lateinit var adapter: ForecastAdapter
-    private lateinit var testList : ArrayList<WeatherForecast>
+
     private val apiKey = "16b2e30a5f1379b1d8eea7014dc75149"
     private lateinit var compositeDisposable: CompositeDisposable
     var BASE_URL = "https://api.openweathermap.org/data/2.5/"
@@ -87,15 +84,17 @@ class MainActivity : AppCompatActivity() {
 
         compositeDisposable = CompositeDisposable()
         val retrofit = RetrofitService(BASE_URL).retrofit.create(WeatherAPI::class.java)
-        compositeDisposable.add(retrofit.getCityWeatherData(city,apiKey)
+        compositeDisposable.add(retrofit.getCityWeatherData(city, apiKey)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
-                    binding.progressBar.visibility = View.GONE
-                        setData(it)
-                }, { throwable->
+                binding.progressBar.visibility = View.GONE
+                setData(it)
+            }, { throwable ->
                 Toast.makeText(this@MainActivity, "City not found", Toast.LENGTH_SHORT).show()
-                binding.progressBar.visibility = View.GONE }))
+                binding.progressBar.visibility = View.GONE
+            })
+        )
 
     }
 
@@ -104,35 +103,17 @@ class MainActivity : AppCompatActivity() {
 
         compositeDisposable = CompositeDisposable()
         val retrofit = RetrofitService(BASE_URL).retrofit.create(WeatherAPI::class.java)
-        compositeDisposable.add(retrofit.getCurrentWeatherData(latitude, longtitude,apiKey)
+        compositeDisposable.add(retrofit.getCurrentWeatherData(latitude, longtitude, apiKey)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
                 binding.progressBar.visibility = View.GONE
                 setData(it)
-            }, { throwable->
+            }, { throwable ->
                 Toast.makeText(this@MainActivity, throwable.message, Toast.LENGTH_SHORT).show()
-                binding.progressBar.visibility = View.GONE }))
-    }
-
-    private fun getDaily(lan:String,lon:String){
-        compositeDisposable = CompositeDisposable()
-        val retrofit = RetrofitService(BASE_URL).retrofit.create(WeatherAPI::class.java)
-        compositeDisposable.add(retrofit.getWeatherForecast(lan, lon,16,apiKey)
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({
-                val weatherList = it.list
-                if (weatherList != null) {
-                    adapter = ForecastAdapter(weatherList)
-                    binding.weatherRv.adapter = adapter
-                }
-                else {
-                    Toast.makeText(this@MainActivity, "Error:", Toast.LENGTH_SHORT).show()
-                }
-            }, { throwable->
-                Toast.makeText(this@MainActivity, throwable.message, Toast.LENGTH_SHORT).show()
-            }))
+                binding.progressBar.visibility = View.GONE
+            })
+        )
     }
 
 
@@ -160,8 +141,6 @@ class MainActivity : AppCompatActivity() {
                                 location.latitude.toString(),
                                 location.longitude.toString()
                             )
-                            getDaily(location.latitude.toString(),location.longitude.toString())
-
                         }
                     }
             } else {
@@ -207,7 +186,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == LOCATION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -232,7 +215,7 @@ class MainActivity : AppCompatActivity() {
             println("Current date: $currentDate")
 
             dateTime.text = currentDate + " " + currentTime
-            cityName.text = body.sys.country +"-"+body.name
+            cityName.text = body.sys.country + "-" + body.name
             maxTemp.text = "Max: " + minmax(body?.main?.temp_max!!) + "°"
             minTemp.text = "Min: " + minmax(body?.main?.temp_min!!) + "°"
             temp.text = "" + minmax(body?.main?.temp!!) + "°"
@@ -337,25 +320,28 @@ class MainActivity : AppCompatActivity() {
                 else -> {
                     weatherImg.setAnimation(R.raw.unknown)
                     binding.weatherImg.playAnimation()
-                    mainLayout.background = ContextCompat.getDrawable(this@MainActivity, R.drawable.unknown_bg)
-                    optionsLayout.background = ContextCompat.getDrawable(this@MainActivity, R.drawable.unknown_bg)
-                    optionsLayout2.background = ContextCompat.getDrawable(this@MainActivity, R.drawable.unknown_bg)
+                    mainLayout.background =
+                        ContextCompat.getDrawable(this@MainActivity, R.drawable.unknown_bg)
+                    optionsLayout.background =
+                        ContextCompat.getDrawable(this@MainActivity, R.drawable.unknown_bg)
+                    optionsLayout2.background =
+                        ContextCompat.getDrawable(this@MainActivity, R.drawable.unknown_bg)
                 }
             }
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun correctTime(time:Long):String{
-        val localTime=time.let {
+    private fun correctTime(time: Long): String {
+        val localTime = time.let {
             Instant.ofEpochSecond(it).atZone(ZoneId.systemDefault()).toLocalTime()
         }
         return localTime.toString()
     }
 
     private fun minmax(tempMax: Double): Double {
-        var intTemp=tempMax
-        intTemp=intTemp.minus(273)
+        var intTemp = tempMax
+        intTemp = intTemp.minus(273)
         return intTemp.toBigDecimal().setScale(1, RoundingMode.UP).toDouble()
     }
 
