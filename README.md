@@ -10,4 +10,4 @@ When the program first opens, it asks for permission for the location. For this 
 The gif on the left is from 6:00 to 17:59 p.m.
 The gif on the right is from 18:00 to 05:59.
 
-When user click search button on the right of search text display on your current location weather.
+When user click search button on the right of search text and display on your current location weather.
